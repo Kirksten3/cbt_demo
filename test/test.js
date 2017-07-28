@@ -74,15 +74,5 @@ describe('OrderController', function () {
         done();
       });
     });
-    //it('should fail to order', function (done) {
-      //chai.request("http://localhost:3000")
-        //.post('/order')
-        //.send({ make: "1234supplierid", model: "Anvil", package: "", customer_id: "1234" })
-        //.end(function (err, res) {
-          //res.body.should.be.a('object');
-          //res.body.should.have.property('error');
-          //done();
-        //});
-    //});
   });
 });
