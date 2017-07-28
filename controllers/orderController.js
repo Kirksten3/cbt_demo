@@ -6,18 +6,19 @@ var request = require('request');
 exports.getOrders = function (req, res) {
   // get all orders, return JSON
   if (req.query.userId == null) {
-    res.send("Must be logged in!");
+    return res.status(400).send({error: "Must be logged in!"});
   }
   User.findOne({_id: req.query.userId }, function (err, user) {
     if (err) throw err;
+    if (user == null) return res.status(400).send({ error: "No User found" });
     if (!user.isEmployee){
-      res.send("NOT A VALID USER, must be employee");
+      return res.status(400).send({error: "NOT A VALID USER, must be employee"});
     }
     else {
       Order.find({}, function (err, orders) {
         if (err) throw err;
         console.log(orders);
-        res.send(orders);
+        return res.send(orders);
       });
     }
   });
@@ -25,21 +26,14 @@ exports.getOrders = function (req, res) {
 
 function prepRainier(order) {
   console.log("getting nonce token");
-  //var headers = {
-    //"Content-Type": "application/json"
-  //}
   var options = {
     url: "http://localhost:3051/rainier/v10.0/nonce_token?storefront=ccas-bb9630c04f",
     method: 'GET'
-    //headers: headers,
   }
 
   request(options, function (err, response, body) {
-    console.log(body);
     var data = JSON.parse(body);
     if (data.nonce_token != null) {
-      console.log(data.nonce_token);
-      //return data.nonce_token;
       sendOrderToRainier(order, data.nonce_token);
     }
   });
@@ -63,11 +57,11 @@ function sendOrderToRainier(order, token) {
   }
 
   request(options, function (err, response, body) {
-    console.log(body);
     if (JSON.parse(body).order_id != null) {
       console.log("SUCCESS SENDING TO RAINIER");
+      return false;
     }
-    return;
+    return true;;
   });
 
 }
@@ -88,11 +82,11 @@ function sendOrderToAcme(order) {
   }
 
   request(options, function (err, response, body) {
-    console.log(body);
     if (JSON.parse(body).order != null) {
       console.log("SUCCESS SENDING TO ACME");
+      return true;
     }
-    return;
+    return false;
   });
 
 }
@@ -103,13 +97,15 @@ function sendOrderToSupplier(order) {
     sendOrderToAcme(order);
   else
     prepRainier(order);
-    //sendOrderToRainier(order);
 }
 
 exports.addOrder = function (req, res) {
   // add new orders
+  if (req.body.model == "" || req.body.package == "" || req.body.make == "") {
+    return res.status(400).send({ error: "Must provide order detail information"});
+  } 
   if (req.body.customer_id == "") {
-    return res.send("Must be Logged in!");
+    return res.status(400).json({error: "Must be Logged in!"});
   }
 
   console.log(req.body);
@@ -130,6 +126,7 @@ exports.addOrder = function (req, res) {
 exports.downloadOrder = function (req, res) {
   Order.findOne({ _id: req.query.id }, function (err, order) {
     if (err) throw err;
+    if (order == null) res.status(400).send({ error: "Order not found"});
     res.json(order);
     //res.download('../public/' + order._id + ".json", 'order-' + order._id + '.json');
   });

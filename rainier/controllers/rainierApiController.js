@@ -7,12 +7,12 @@ var crypto = require('crypto');
 exports.returnToken = function (req, res) {
   console.log(req.query);
   if (req.query == null || req.query.storefront == null) {
-    return res.json({ error: "No Storefront Token Provided."});
+    return res.status(400).json({ error: "No Storefront Token Provided."});
   }
   StoreToken.findOne({ token: req.query.storefront }, function (err, token) {
     if (err) throw err;
     if (token == null) {
-      return res.json({ error: "Invalid Storefront Token "});
+      return res.status(400).json({ error: "Invalid Storefront Token "});
     }
     crypto.randomBytes(21, function (err, buf) {
       if (err) throw err;
@@ -28,19 +28,19 @@ exports.returnToken = function (req, res) {
 
 exports.submitOrder = function (req, res) {
   if (req.body == null || req.body.token == null) {
-    return res.json({ error: "No Token Provided, Request Ignored. "});
+    return res.status(400).json({ error: "No Token Provided, Request Ignored. "});
   }
   Token.findOne({ token: req.body.token }, function (err, token) {
     if (token.isUsed) {
-      return res.json({ error: "Token has already been used, please get new token "});
+      return res.status(400).json({ error: "Token has already been used, please get new token "});
     }
   });
   Order.create({ token: req.body.token, model: req.body.model, package: req.body.package }, function (err, order) {
-    if (err) return res.json({ error: err });
+    if (err) return res.status(500).json({ error: err });
     Token.findOneAndUpdate({ token: req.body.token }, { isUsed: true }, {upsert: false}, function (err, token) {
-      if (err) return res.json({ error: err });
+      if (err) return res.status(500).json({ error: err });
       if (token == null) {
-        return res.json({ error: "Unable to update token." });
+        return res.status(400).json({ error: "Unable to update token." });
       }
       return res.json({ order_id: order._id });
     })

@@ -26,8 +26,9 @@ exports.getModelsAndPackages = function (req, res) {
 exports.login = function (req, res) {
   User.findOne({ userName: req.body.userName, password: req.body.password}, function (err, user) {
     if (err) throw err;
+    if (user == null) {
+      res.status(400).send({error: "No user found"});
+    }
     res.send(user);
   }); 
 }
-
-exports.logout = function (req, res) {}

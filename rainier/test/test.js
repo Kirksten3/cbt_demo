@@ -7,13 +7,7 @@ var should = chai.should();
 var apiController = ('../controllers/rainierApiController');
 var Token = require('../models/tokens');
 var StoreToken = require('../models/storeTokens');
-
-mockgoose.prepareStorage().then(function() {
-  mongoose.connect('mongodb://localhost:27017/cbt_test_acme_db', function (err) {
-    if (err) throw err;
-  });
-});
-
+var app = require('../rainier');
 
 chai.use(chaiHttp);
 
@@ -26,27 +20,26 @@ describe('AcmeApiController', function () {
     it('should successfully return a token', function (done) {
         chai.request("http://localhost:3051")
           .get('/rainier/v10.0/nonce_token')
-          .send({
+          .query({
             storefront: "ccas-bb9630c04f"
           })
           .end(function(err, res) {
             res.should.have.status(200);
             res.body.should.be.a('object');
-            res.body.should.have.property('token');
-            res.body.should.have.property('isUsed');
-            res.body.isUsed.should.eq(false);
+            res.body.should.have.property('nonce_token');
+            res.body.nonce_token.should.be.a('string');
+            done();
           });
-        done();
       });
     it('should require storefront token', function (done) {
       chai.request("http://localhost:3051")
         .get('/rainier/v10.0/nonce_token')
         .end(function(err, res) {
-          res.should.have.status(200);
+          res.should.have.status(400);
           res.body.should.be.a('object');
           res.body.should.have.property('error');
+          done();
         });
-      done();
     });
     it('should require a valid storefront token', function (done) {
       chai.request("http://localhost:3051")
@@ -55,11 +48,11 @@ describe('AcmeApiController', function () {
           storefront: "invalidStoreFront"
         })
         .end(function(err, res) {
-          res.should.have.status(200);
+          res.should.have.status(400);
           res.body.should.be.a('object');
           res.body.should.have.property('error');
+          done();
         });
-      done();
     });
   });
   describe('#submitOrder()', function () {
@@ -80,8 +73,8 @@ describe('AcmeApiController', function () {
           res.should.have.status(200);
           res.body.should.be.a('object');
           res.body.should.have.property('order_id');
+          done();
         });
-      done();
     });
     it('should not accept used tokens', function (done) {
       chai.request("http://localhost:3051")
@@ -93,11 +86,11 @@ describe('AcmeApiController', function () {
           package: '14k'
         })
         .end(function(err, res) {
-          res.should.have.status(200);
+          res.should.have.status(400);
           res.body.should.be.a('object');
           res.body.should.have.property('error');
+          done();
         });
-      done();
     });;
     it('should require a token', function (done) {
       chai.request("http://localhost:3051")
@@ -108,11 +101,11 @@ describe('AcmeApiController', function () {
           package: '14k'
         })
         .end(function(err, res) {
-          res.should.have.status(200);
+          res.should.have.status(400);
           res.body.should.be.a('object');
           res.body.should.have.property('error');
+          done();
         });
-      done();
     });
   });
 });
