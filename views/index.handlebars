@@ -1,0 +1,174 @@
+<div class='col-md-12'>
+  <h3>Submit an Order</h3>
+</div>
+
+<div class='col-md-12'>
+
+    <div class='col-md-3'>
+      <div class="dropdown">
+        <button class="btn btn-default dropdown-toggle" type="button" data-toggle="dropdown">Suppliers
+          <span class="caret"></span>
+        </button>
+        <ul class="dropdown-menu">
+          <li><a onclick='getModelAndPackage("Acme")' href="#">Acme</a></li>
+          <li><a onclick='getModelAndPackage("Rainier")' href="#">Rainier</a></li>
+        </ul>
+      </div>
+    </div>
+    <input type='hidden' id='supplier' name='supplier'>
+
+    <div class='col-md-3'>
+      <div class='dropdown'>
+        <button class='btn btn-default dropdown-toggle' type='button' data-toggle='dropdown'>Models
+          <span class='caret'></span>
+        </button>
+        <ul id='modelsDD' class='dropdown-menu'>
+        </ul>
+      </div>
+    </div>
+    <input type='hidden' id='models' name='models'>
+
+    <div class='col-md-3'>
+      <div class='dropdown'>
+        <button class='btn btn-default dropdown-toggle' type='button' data-toggle='dropdown'>Packages
+          <span class='caret'></span>
+        </button>
+        <ul id='packagesDD' class='dropdown-menu'>
+        </ul>
+      </div>
+    </div>
+    <input type='hidden' id='packages' name='packages'>
+
+    <input type='hidden' id='userId' name='userId'>
+
+    <button type='button' onclick='addOrder()' class='btn btn-default'>Submit Order</button>
+
+</div>
+
+<div class="modal fade" id='loginModal'>
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Login</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div>
+          User Name: <input type='text' id='userName'>
+        </div>
+        <div>
+          Password: <input type='password' id='password'>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" onclick='loginSubmit()' class="btn btn-primary">Login</button>
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id='orderModal'>
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Order Information</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div id='modalBody' class="modal-body" style='overflow-wrap:break-word;'>
+        <div>No Content To Display</div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+<script type='text/javascript'>
+function getModelAndPackage(supplier) {
+  $.ajax({
+    method: 'GET',
+    url: '/getModelsAndPackages',
+    data: { supplier: supplier },
+    success: function (data) {
+      $('#supplier').val(supplier);
+      bindData(data.models, 'models');
+      bindData(data.packages, 'packages');
+      $('#models').val('');
+      $('#packages').val('');
+    }
+  });
+}
+
+// kendo-ish style binding
+function bindData(data, type) {
+  var html = "";
+  for(var i = 0; i < data.length; i++) {
+    html += "<li><a href='#' onclick=\"setInput(\'" + data[i].name + "\',\'" + type + "\')\">" + data[i].name + "</a></li>";
+  }
+  if (type == 'models')
+    $('#modelsDD').html(html);
+  else
+    $('#packagesDD').html(html);
+}
+
+function setInput(name, type) {
+  $('#' + type).val(name);
+}
+
+function loginSubmit() {
+  $.ajax({
+    method: 'POST',
+    url: '/login',
+    data: { userName: $('#userName').val(), password: $('#password').val() },
+    success: function (data) {
+      $('#userId').val(data._id);
+      $('#loginModal').modal('hide');
+      console.log('set user id to: ' + data._id);
+    }
+  })
+}
+
+function clearUser() {
+  $('#userId').val('');
+}
+
+function getOrders() {
+  console.log($('#userId').val());
+  $.ajax({
+    method: 'GET',
+    url: '/orders',
+    data: { userId: $('#userId').val() },
+    success: function (data) {
+      console.log(data);
+      $('#modalBody').text(JSON.stringify(data));
+      //$('#orderModal').modal('show');
+    },
+    error: function (data) {
+      console.log("ERROR");
+    }
+  })
+}
+
+function addOrder() {
+  $.ajax({
+    method: 'POST',
+    url: '/order',
+    data: { customer_id: $('#userId').val(), make: $('#supplier').val(), model: $('#models').val(), package: $('#packages').val() },
+    success: function (data) {
+      if (data.statusCode == 200) {
+        var downloadLink = '<a href="' + data.link + '" target="_blank">Download Order</a>';
+          $('#modalBody').html(downloadLink);
+        $('#orderModal').modal('show');
+      }
+    }
+  })
+}
+</script>
